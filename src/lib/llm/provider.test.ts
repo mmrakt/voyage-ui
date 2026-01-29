@@ -1,21 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { LLMProvider } from "./provider";
 
-const mockEnv = vi.hoisted(() => ({
-  OPENROUTER_API_KEY: "test-key",
-  LLM_PROVIDER: "claude" as LLMProvider,
-  USE_MOCK_API: true,
-  NODE_ENV: "test" as const,
-}));
+let mockProvider: LLMProvider = "claude";
 
 vi.mock("@/lib/env", () => ({
-  env: mockEnv,
+  env: {
+    get OPENROUTER_API_KEY() {
+      return "test-key";
+    },
+    get LLM_PROVIDER() {
+      return mockProvider;
+    },
+    get NODE_ENV() {
+      return "test";
+    },
+    get AMADEUS_CLIENT_ID() {
+      return "test-client-id";
+    },
+    get AMADEUS_CLIENT_SECRET() {
+      return "test-client-secret";
+    },
+    get AMADEUS_HOSTNAME() {
+      return "test";
+    },
+  },
 }));
 
 describe("LLM Provider", () => {
   beforeEach(() => {
     vi.resetModules();
-    mockEnv.LLM_PROVIDER = "claude";
+    mockProvider = "claude";
   });
 
   it("returns claude as default provider", async () => {
@@ -26,7 +40,7 @@ describe("LLM Provider", () => {
   it.each<LLMProvider>(["claude", "gpt", "gemini", "llama", "deepseek"])(
     "returns %s when LLM_PROVIDER is set to %s",
     async (provider) => {
-      mockEnv.LLM_PROVIDER = provider;
+      mockProvider = provider;
       const { getCurrentProvider } = await import("./provider");
       expect(getCurrentProvider()).toBe(provider);
     },
@@ -46,7 +60,7 @@ describe("LLM Provider", () => {
       ["llama", true],
       ["deepseek", false],
     ])("returns %s for %s provider", async (provider, expected) => {
-      mockEnv.LLM_PROVIDER = provider;
+      mockProvider = provider;
       const { currentModelSupportsTools } = await import("./provider");
       expect(currentModelSupportsTools()).toBe(expected);
     });
