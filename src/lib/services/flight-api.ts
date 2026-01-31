@@ -1,5 +1,10 @@
 import { logger as defaultLogger } from "@/lib/logger";
-import type { Flight, FlightSearchResult } from "@/lib/types";
+import type {
+  Flight,
+  FlightSearchParams,
+  FlightSearchResult,
+} from "@/lib/types";
+import { normalizeISODate } from "@/lib/utils/iso-date";
 import {
   type AmadeusFlightOffer,
   formatDuration,
@@ -67,21 +72,24 @@ export function createSearchFlights(deps: Partial<FlightSearchDeps> = {}) {
   };
 
   return async function searchFlights(
-    destination: string,
+    params: FlightSearchParams,
   ): Promise<FlightSearchResult> {
+    const { destination, departureDate: requestedDate } = params;
     const amadeus = getClient();
+    const normalizedDate = normalizeISODate(requestedDate);
+    const departureDate = normalizedDate ?? getTomorrowDate();
 
     const destinationCode = getAirportCode(destination);
     if (!destinationCode) {
       logger.warn`Unknown destination: ${destination}, returning empty result`;
       return {
         destination,
+        departureDate,
         flights: [],
       };
     }
 
     const originCode = "TYO"; // 東京発
-    const departureDate = getTomorrowDate();
 
     try {
       const response = await amadeus.shopping.flightOffersSearch.get({
@@ -99,10 +107,11 @@ export function createSearchFlights(deps: Partial<FlightSearchDeps> = {}) {
         convertAmadeusOfferToFlight(offer, index),
       );
 
-      logger.info`Found ${flights.length} flights to ${destination} (${destinationCode})`;
+      logger.info`Found ${flights.length} flights to ${destination} (${destinationCode}) on ${departureDate}`;
 
       return {
         destination,
+        departureDate,
         flights,
       };
     } catch (error) {

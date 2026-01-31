@@ -11,6 +11,7 @@ describe("ChatResponse", () => {
   it("renders message with flight result", () => {
     const flightResult = {
       destination: "京都",
+      departureDate: "2024-03-15",
       flights: [
         {
           id: "1",

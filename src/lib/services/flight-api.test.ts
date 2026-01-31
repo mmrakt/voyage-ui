@@ -140,19 +140,75 @@ describe("createSearchFlights", () => {
     });
 
     const searchFlights = createSearchFlights(deps);
-    const result = await searchFlights("京都");
+    const result = await searchFlights({ destination: "京都" });
 
     expect(result.destination).toBe("京都");
+    expect(result.departureDate).toBe("2024-01-15");
     expect(result.flights).toHaveLength(1);
     expect(result.flights[0].airline).toBe("ANA");
     expect(mockLogger.info).toHaveBeenCalled();
   });
 
+  it("uses specified departure date", async () => {
+    mockGet.mockResolvedValueOnce({
+      data: [createMockFlightOffer()],
+    });
+
+    const searchFlights = createSearchFlights(deps);
+    const result = await searchFlights({
+      destination: "大阪",
+      departureDate: "2024-03-20",
+    });
+
+    expect(result.departureDate).toBe("2024-03-20");
+    expect(mockGet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        departureDate: "2024-03-20",
+      }),
+    );
+  });
+
+  it("falls back to default date when departureDate is invalid", async () => {
+    mockGet.mockResolvedValueOnce({
+      data: [createMockFlightOffer()],
+    });
+
+    const searchFlights = createSearchFlights(deps);
+    const result = await searchFlights({
+      destination: "大阪",
+      departureDate: "2024-02-30",
+    });
+
+    expect(result.departureDate).toBe("2024-01-15");
+    expect(mockGet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        departureDate: "2024-01-15",
+      }),
+    );
+  });
+
+  it("uses default date when not specified", async () => {
+    mockGet.mockResolvedValueOnce({
+      data: [createMockFlightOffer()],
+    });
+
+    const searchFlights = createSearchFlights(deps);
+    const result = await searchFlights({ destination: "福岡" });
+
+    expect(result.departureDate).toBe("2024-01-15"); // getTomorrowDate mock value
+    expect(mockGet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        departureDate: "2024-01-15",
+      }),
+    );
+  });
+
   it("returns empty flights for unknown destination", async () => {
     const searchFlights = createSearchFlights(deps);
-    const result = await searchFlights("アトランタ");
+    const result = await searchFlights({ destination: "アトランタ" });
 
     expect(result.destination).toBe("アトランタ");
+    expect(result.departureDate).toBe("2024-01-15");
     expect(result.flights).toHaveLength(0);
     expect(mockGet).not.toHaveBeenCalled();
     expect(mockLogger.warn).toHaveBeenCalled();
@@ -163,7 +219,7 @@ describe("createSearchFlights", () => {
 
     const searchFlights = createSearchFlights(deps);
 
-    await expect(searchFlights("大阪")).rejects.toThrow(
+    await expect(searchFlights({ destination: "大阪" })).rejects.toThrow(
       "フライト検索に失敗しました: API Error",
     );
     expect(mockLogger.error).toHaveBeenCalled();
@@ -173,12 +229,12 @@ describe("createSearchFlights", () => {
     mockGet.mockResolvedValueOnce({ data: [] });
 
     const searchFlights = createSearchFlights(deps);
-    await searchFlights("福岡");
+    await searchFlights({ destination: "福岡", departureDate: "2024-05-01" });
 
     expect(mockGet).toHaveBeenCalledWith({
       originLocationCode: "TYO",
       destinationLocationCode: "FUK",
-      departureDate: "2024-01-15",
+      departureDate: "2024-05-01",
       adults: 1,
       max: 5,
       currencyCode: "JPY",
@@ -195,7 +251,7 @@ describe("createSearchFlights", () => {
     });
 
     const searchFlights = createSearchFlights(deps);
-    const result = await searchFlights("札幌");
+    const result = await searchFlights({ destination: "札幌" });
 
     expect(result.flights).toHaveLength(3);
     expect(result.flights[0].id).toBe("HND-001");

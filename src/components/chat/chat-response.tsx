@@ -12,6 +12,7 @@ export function ChatResponse({ flightResult, message }: ChatResponseProps) {
       {flightResult && (
         <FlightList
           destination={flightResult.destination}
+          departureDate={flightResult.departureDate}
           flights={flightResult.flights}
         />
       )}

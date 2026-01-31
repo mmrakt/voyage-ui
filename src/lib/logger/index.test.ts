@@ -47,6 +47,7 @@ describe("logLLMResponse", () => {
   it("logs with flight result when provided", () => {
     const flightResult = {
       destination: "京都",
+      departureDate: "2024-03-15",
       flights: [
         {
           id: "1",

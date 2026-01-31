@@ -9,8 +9,14 @@ export interface Flight {
   duration: string;
 }
 
+export interface FlightSearchParams {
+  destination: string;
+  departureDate?: string; // YYYY-MM-DD形式
+}
+
 export interface FlightSearchResult {
   destination: string;
+  departureDate: string;
   flights: Flight[];
 }
 
